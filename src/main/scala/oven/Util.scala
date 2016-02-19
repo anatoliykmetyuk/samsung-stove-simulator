@@ -36,6 +36,24 @@ object Util {
   }
 
   def forOpYield(op: String, scripts: Seq[Script[Any]]) = forScript(op, scripts, true )
-  def forOpUnit (op: String, scripts: Seq[Script[Any]]) = forScript(op, scripts, false)
+  def forOp     (op: String, scripts: Seq[Script[Any]]) = forScript(op, scripts, false)
 
+}
+
+class Switch extends Trigger {
+  private var switched = false
+
+  override script lifecycle =
+    if switched then ..? else ...
+    super.lifecycle
+
+  def switch(state: Boolean) {switched = state; trigger}
+}
+
+class ValueTrigger[T] extends Trigger {
+  private var value: Option[T] = None
+
+  def push(v: T) {value = Some(v); trigger}
+
+  override script lifecycle = super.lifecycle; if (value.isDefined) then ^value.get
 }

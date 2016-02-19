@@ -5,6 +5,10 @@ import subscript.Predef._
 
 import subscript.objectalgebra._
 
-trait Triggers {
+object Triggers {
+  val plateSelected    = new Switch
+  val heatLevelChanged = new ValueTrigger[Int]
 
+  val shutdownCommand  = new Trigger
+  val shutdown         = new Trigger
 }

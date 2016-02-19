@@ -2,9 +2,10 @@ package oven
 
 import subscript.language
 import subscript.Predef._
+import subscript.objectalgebra._
 
 import subscript.swing._
-// import subscript.swing.Scripts._
+import subscript.swing.Scripts._
 
 import scala.swing._
 import scala.swing.BorderPanel.Position._
@@ -32,20 +33,16 @@ trait MainFrameTrait extends FrameProcess {
   val lockBtn  = new Button("Lock"  ) {enabled = false}
   val bridge   = new Button("Bridge") {enabled = false}
 
-  case class HeatLevelButton(lbl: String, change: Int => Int) extends Button(lbl) {
-    enabled = false
-  }
-
   val heatLevelBtns = Seq(
-    "+"  -> {(_: Int) + 1 }
-  , "-"  -> {(_: Int) - 1 }
-  , "3"  -> {(_: Int) + 3 }
-  , "6"  -> {(_: Int) + 6 }
-  , "11" -> {(_: Int) + 11}
-  ).map {case (lbl: String, dh: (Int => Int)) => HeatLevelButton(lbl, dh)}
+    "+"  ->  1 
+  , "-"  -> -1 
+  , "3"  ->  3 
+  , "6"  ->  6 
+  , "11" -> 11
+  ).map {case (lbl: String, dh: Int) => HeatLevelButton(lbl, dh)}
 
   val globalControls = new GridPanel(1, 2 + heatLevelBtns.size)  {contents ++=
-    heatLevelBtns ++ Seq(bridge, lockBtn, onOffBtn)
+    heatLevelBtns.map(_.btn) ++ Seq(bridge, lockBtn, onOffBtn)
   }
 
   // All controls
