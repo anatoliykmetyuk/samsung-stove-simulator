@@ -32,7 +32,8 @@ object Util {
 
   def forScript(op: String, scripts: Seq[Script[Any]], doYield: Boolean) = subscript.DSL._script[Any](None, Symbol("sample")){(_node: subscript.vm.Script[Any]) =>
     implicit val script = _node
-    _op(op)(forPayload(scripts, script, doYield): _*)
+    if (!scripts.isEmpty) _op(op)(forPayload(scripts, script, doYield): _*)
+    else _neutral
   }
 
   def forOpYield(op: String, scripts: Seq[Script[Any]]) = forScript(op, scripts, true )
@@ -58,19 +59,10 @@ class ValueTrigger[T] extends Trigger {
   override script lifecycle = super.lifecycle; if (value.isDefined) then ^value.get
 }
 
-/**
- * A mixture of Switch and ValueTrigger: if triggered too early,
- * the script who came too late to listen will still behave as if
- * experienced a trigger (will collect the values and proceed).
- * Designed for 1-to-1 communication - the values will be automatically
- * consumed by the invocation of lifecycle.
- */
-class Signal[T] extends Trigger {
+class Signal[T] extends SSProcess {
   private var values: Seq[T] = Nil
 
-  def push(v: T) {values :+= v; trigger}
+  def push(v: T) {values :+= v}
 
-  override script lifecycle =
-    if !values.isEmpty then ^values {:values = Nil:} break else ...
-    super.lifecycle
+  override script live = ^values {:values = Nil:}
 }
