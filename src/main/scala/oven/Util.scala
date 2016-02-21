@@ -57,3 +57,20 @@ class ValueTrigger[T] extends Trigger {
 
   override script lifecycle = super.lifecycle; if (value.isDefined) then ^value.get
 }
+
+/**
+ * A mixture of Switch and ValueTrigger: if triggered too early,
+ * the script who came too late to listen will still behave as if
+ * experienced a trigger (will collect the values and proceed).
+ * Designed for 1-to-1 communication - the values will be automatically
+ * consumed by the invocation of lifecycle.
+ */
+class Signal[T] extends Trigger {
+  private var values: Seq[T] = Nil
+
+  def push(v: T) {values :+= v; trigger}
+
+  override script lifecycle =
+    if !values.isEmpty then ^values {:values = Nil:} break else ...
+    super.lifecycle
+}
