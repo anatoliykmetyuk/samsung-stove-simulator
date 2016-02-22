@@ -8,6 +8,8 @@ import oven.phys._
 
 val heater = new HeatSource {
   val name         = "Heater"
+  infiniteCapacity = true
+
   heatCapacity     = 2
   heatConductivity = 20
   temperature      = 100
