@@ -11,8 +11,9 @@ import Util._
 
 /**
  * Step is a simulation step in milliseconds.
+ * The larger the convergence speed, the SLOWER the temperatures converge.
  */
-class HeatPhysics(val step: Long = 100, val environment: Boolean = false, val environmentalTemperature: Double = 30) extends SSProcess {
+class HeatPhysics(val step: Long = 100, val environment: Option[HeatSource] = None, val convergenceSpeed: Int = 1) extends SSProcess {
 
   // Internal state
   private[this] var _time: Double = 0
@@ -61,24 +62,25 @@ class HeatPhysics(val step: Long = 100, val environment: Boolean = false, val en
       }
 
 
-    // Do heat exchange between all the registered heat sources
-    iteration = forOp: ";", (for ((hs1, hs2) <- contacts if hs1.temperature != hs2.temperature) yield [
-      // Determine which one passes the heat to which one
-      val dt       = hs1.temperature - hs2.temperature
-      val donor    = if (dt    >= 0  ) hs1 else hs2  // The one to give away the heat
-      val acceptor = if (donor == hs1) hs2 else hs1  // The one to accept the heat
+    // Do heat exchange between all the registered heat sources and the environment
+    iteration =
+      forOp: ";", (for ((hs1, hs2) <- contacts if hs1.temperature != hs2.temperature) yield [heatTransaction: hs1, hs2])
+      if environment.isDefined then forOp: ";", (for (hs <- heatSources.toList if hs.temperature != environment.get.temperature) yield [heatTransaction: environment.get, hs ])
+
+    heatTransaction(hs1: HeatSource, hs2: HeatSource) =
+      val dt            = hs1.temperature - hs2.temperature
 
       // How much heat to pass?
+      val availableHeat   = if (dt >= 0) hs1.amountOfHeat else hs2.amountOfHeat
       val minConductivity = math.min(hs1.heatConductivity, hs2.heatConductivity) * step / 1000D
-      val passingAbility  = math.min(donor.amountOfHeat, minConductivity)
+      val passingAbility  = math.min(availableHeat, minConductivity)
 
       // Logistic function for smoothing speed up when the temperature converges (https://en.wikipedia.org/wiki/Logistic_function)
-      val heatToPass = ( passingAbility / (1 + math.exp(-dt / (10 * passingAbility))) ) - passingAbility / 2
+      val heatToPass = ( passingAbility / (1 + math.exp(-dt / (convergenceSpeed * passingAbility))) ) - passingAbility / 2
 
       // Do the transaction
-      let donor   .amountOfHeat -= heatToPass
-      let acceptor.amountOfHeat += heatToPass
-    ])
+      let hs1.amountOfHeat -= heatToPass
+      let hs2.amountOfHeat += heatToPass
 
     cleanup = let _time += step / 1000D
 }
